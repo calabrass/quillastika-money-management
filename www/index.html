@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#075C4B">
+  <title>Quillastika — Smart Finance</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+          colors: {
+            pine: { DEFAULT: '#0B7A63', dark: '#075C4B', light: '#18A67E', soft: '#E9F4EF' },
+            ink: '#172B24',
+            muted: '#6B746F',
+            mist: '#F6F7F6',
+            income: '#159570',
+            expense: '#E65361',
+            invest: '#4A7FC1'
+          },
+          boxShadow: {
+            soft: '0 1px 2px rgba(23,43,36,.04), 0 8px 24px -12px rgba(23,43,36,.12)',
+            lift: '0 12px 32px -12px rgba(7,92,75,.35)',
+            fab: '0 14px 30px -8px rgba(7,92,75,.5)'
+          },
+          borderRadius: { '4xl': '28px' }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { background-color: #F6F7F6; padding-bottom: env(safe-area-inset-bottom); }
+    body { background-color: #F6F7F6; min-height: 100vh; min-height: 100dvh; margin: 0; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .pt-safe { padding-top: env(safe-area-inset-top); }
+    .header-safe { padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem); }
+    .tabular { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+    .tracking-fin { letter-spacing: -0.02em; }
+
+    .hero-bg { background: linear-gradient(165deg, #06493A 0%, #075C4B 30%, #0B7A63 62%, #0E8B6C 100%); }
+
+    /* Entrance motion — transform + opacity only */
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .rise { animation: rise .55s cubic-bezier(0.32,0.72,0,1) both; }
+    @keyframes pop-in { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .pop-in { animation: pop-in .28s cubic-bezier(0.32,0.72,0,1) both; }
+
+    /* Tactile press feedback */
+    .pressable { transition: transform .12s ease-out, background-color .2s ease, box-shadow .2s ease; }
+    .pressable:active { transform: scale(.96); }
+
+    /* Toast */
+    @keyframes toast-in { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(1rem); } }
+    .toast-enter { animation: toast-in 0.25s ease-out forwards; }
+    .toast-leave { animation: toast-out 0.2s ease-in forwards; }
+
+    /* Skeleton shimmer (for >300ms ops) */
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    .shimmer { background: linear-gradient(90deg, #eef1ef 25%, #f7f9f8 50%, #eef1ef 75%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input:focus, textarea:focus, button:focus-visible { outline: none; }
+    button:focus-visible { box-shadow: 0 0 0 3px rgba(11,122,99,.35); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="vendor/jspdf.plugin.autotable.min.js"></script>
+  <script src="services/pdf/exportFinancialReport.js"></script>
+</head>
+
+<body class="text-ink antialiased" x-data="quillApp()" :class="{'overflow-hidden': activeModal !== null}">
+<div class="max-w-md mx-auto min-h-screen relative">
+
+  <!-- ══════════ HERO (Level 1) ══════════ -->
+  <header class="hero-bg px-5 pb-24 text-white rounded-b-[32px] relative overflow-hidden header-safe">
+    <div class="absolute -top-28 -right-28 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute top-24 -left-24 w-64 h-64 rounded-full bg-emerald-300/20 blur-3xl pointer-events-none"></div>
+    <div class="absolute inset-0 rounded-b-[32px] border border-white/10 pointer-events-none"></div>
+
+    <div class="relative rise">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur border border-white/20 p-1 shadow-sm overflow-hidden">
+            <img src="logo.png" alt="Quillastika" class="w-full h-full rounded-xl object-cover">
+          </div>
+          <div>
+            <h1 class="text-[22px] font-extrabold tracking-tight leading-none">Quillastika.</h1>
+            <p class="text-[11px] font-medium text-emerald-100/70 mt-1 tracking-wide">Smart Finance</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button @click="activeModal = 'report'; $nextTick(() => updateReportChart());" aria-label="Laporan"
+                  class="pressable w-11 h-11 bg-white/15 backdrop-blur border border-white/20 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </button>
+          <button @click="activeModal = 'settings'" aria-label="Pengaturan"
+                  class="pressable w-11 h-11 bg-white/15 backdrop-blur border border-white/20 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-100/70 mt-7">Total Kekayaan</p>
+      <p class="text-[42px] leading-[1.05] font-extrabold tracking-fin tabular mt-1" x-text="formatRupiah(animatedTotalKekayaan)"></p>
+
+      <div class="mt-3 flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20">
+          <svg class="w-3.5 h-3.5" :class="monthlyTrendUp ? 'text-rose-200 rotate-0' : 'text-emerald-200 rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+          <span x-text="monthlyChangeLabel"></span>
+        </span>
+        <span class="text-[12px] font-medium text-emerald-100/70">vs bulan lalu</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="px-5 -mt-14 relative z-10 pb-36">
+
+    <!-- Arus strip (Level 2) -->
+    <section class="rise bg-white rounded-[24px] shadow-soft border border-black/[0.04] grid grid-cols-3 divide-x divide-slate-100 overflow-hidden" style="animation-delay:60ms">
+      <div class="px-3 py-4 text-center">
+        <div class="flex items-center justify-center gap-1.5 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-income"></span>
+          <span class="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Masuk</span>
+        </div>
+        <p class="text-[13.5px] font-extrabold tracking-fin tabular truncate" x-text="formatCompact(animatedTotalPemasukan)"></p>
+      </div>
+      <div class="px-3 py-4 text-center">
+        <div class="flex items-center justify-center gap-1.5 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-expense"></span>
+          <span class="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Keluar</span>
+        </div>
+        <p class="text-[13.5px] font-extrabold tracking-fin tabular truncate" x-text="formatCompact(animatedTotalPengeluaran)"></p>
+      </div>
+      <div class="px-3 py-4 text-center">
+        <div class="flex items-center justify-center gap-1.5 mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-invest"></span>
+          <span class="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Invest</span>
+        </div>
+        <p class="text-[13.5px] font-extrabold tracking-fin tabular truncate" x-text="formatCompact(animatedTotalInvestasi)"></p>
+      </div>
+    </section>
+
+    <!-- Smart insight (Level 2 — tinted, not a white card) -->
+    <section class="rise mt-3.5 bg-pine-soft border border-pine/10 rounded-[24px] px-4 py-3.5 flex gap-3 items-start" style="animation-delay:120ms">
+      <div class="w-9 h-9 rounded-full bg-pine text-white flex items-center justify-center shrink-0 shadow-lift">
+        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div class="min-w-0">
+        <p class="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-pine-dark">Insight Cerdas</p>
+        <p class="text-[13.5px] font-medium text-ink/90 leading-relaxed mt-0.5" x-text="smartInsight"></p>
+      </div>
+    </section>
+
+    <!-- Budget (Level 2 — premium progress) -->
+    <section class="rise mt-3.5 bg-white rounded-4xl shadow-soft border border-black/[0.04] p-5" style="animation-delay:180ms">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted">Budget Bulanan</p>
+          <p class="text-[13px] font-medium text-muted mt-1.5">Sisa <span class="font-extrabold text-ink tabular" x-text="formatRupiah(remainingBudget)"></span></p>
+        </div>
+        <p class="text-[26px] font-extrabold tracking-fin tabular leading-none" :class="{'text-income': budgetPercentage < 60, 'text-amber-500': budgetPercentage >= 60 && budgetPercentage <= 85, 'text-expense': budgetPercentage > 85}" x-text="budgetPercentage + '%'"></p>
+      </div>
+      <div class="mt-3.5 h-3.5 rounded-full bg-slate-100 overflow-hidden relative">
+        <div class="h-full rounded-full relative" style="transition: width 500ms cubic-bezier(0.4,0,0.2,1), background-color 400ms ease"
+             :class="getProgressBarColor()" :style="`width: ${Math.max(budgetPercentage, budgetPercentage > 0 ? 6 : 0)}%`">
+          <span class="absolute right-0.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white/90 shadow"></span>
+        </div>
+      </div>
+      <div class="mt-3 flex justify-between text-[12px] font-semibold text-muted">
+        <span>Keluar <span class="text-ink font-bold tabular" x-text="formatCompact(totalPengeluaran)"></span></span>
+        <span>Budget <span class="text-ink font-bold tabular" x-text="formatCompact(targetBudget)"></span></span>
+      </div>
+    </section>
+
+    <!-- Spending viz (Level 2) -->
+    <section class="rise mt-7" style="animation-delay:240ms">
+      <div class="flex justify-between items-end mb-3 px-1">
+        <div>
+          <h2 class="text-[15px] font-extrabold tracking-tight">Arus Keuangan</h2>
+          <p class="text-[12px] font-medium text-muted mt-0.5">Distribusi seluruh waktu</p>
+        </div>
+        <button @click="activeModal = 'report'; $nextTick(() => updateReportChart());" class="pressable text-[13px] font-bold text-pine-dark flex items-center gap-1">
+          Laporan
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="bg-white rounded-4xl shadow-soft border border-black/[0.04] p-5">
+        <template x-if="transactions.length === 0">
+          <div class="text-center py-8">
+            <svg class="w-20 h-20 mx-auto mb-4" viewBox="0 0 80 80" fill="none">
+              <circle cx="40" cy="40" r="34" fill="#E9F4EF"/>
+              <circle cx="40" cy="40" r="24" fill="#fff" stroke="#0B7A63" stroke-opacity=".15" stroke-width="2"/>
+              <circle cx="40" cy="40" r="13" fill="#0B7A63" fill-opacity=".12"/>
+              <path d="M40 33v14M33 40h14" stroke="#0B7A63" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <p class="font-extrabold text-[15px]">Belum ada data keuangan</p>
+            <p class="text-[13px] text-muted font-medium mt-1 mb-4">Mulai mencatat transaksi untuk<br>melihat pola keuanganmu.</p>
+            <button @click="openAdd('keluar')" class="pressable px-5 py-3 bg-pine text-white text-[13.5px] font-bold rounded-2xl shadow-lift">Tambah Transaksi</button>
+          </div>
+        </template>
+        <template x-if="transactions.length > 0">
+          <div>
+            <div class="relative h-52 w-full flex justify-center"><canvas id="expenseChart"></canvas></div>
+            <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-full bg-pine-soft text-pine-dark flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </span>
+              <p class="text-[12.5px] font-medium text-muted leading-snug" x-text="chartInsight"></p>
+            </div>
+          </div>
+        </template>
+      </div>
+    </section>
+
+    <!-- Recent transactions (Level 3) -->
+    <section class="rise mt-7" style="animation-delay:300ms">
+      <div class="flex justify-between items-center mb-3 px-1">
+        <h2 class="text-[15px] font-extrabold tracking-tight">Transaksi Terakhir</h2>
+        <button @click="activeModal = 'all_history'" class="pressable text-[13px] font-bold text-pine-dark px-3.5 py-2 bg-white rounded-full border border-black/[0.05] shadow-soft">Lihat Semua</button>
+      </div>
+      <div class="bg-white rounded-4xl shadow-soft border border-black/[0.04] overflow-hidden">
+        <template x-if="transactions.length === 0">
+          <div class="text-center py-10 px-6">
+            <svg class="w-20 h-20 mx-auto mb-4" viewBox="0 0 80 80" fill="none">
+              <rect x="12" y="20" width="56" height="40" rx="12" fill="#EFF6F3"/>
+              <rect x="22" y="30" width="36" height="7" rx="3.5" fill="#0B7A63" fill-opacity=".25"/>
+              <rect x="22" y="41" width="24" height="7" rx="3.5" fill="#0B7A63" fill-opacity=".15"/>
+              <circle cx="56" cy="52" r="11" fill="#0B7A63"/>
+              <path d="M56 47v10M51 52h10" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <p class="font-extrabold text-[15px]">Belum ada pengeluaran</p>
+            <p class="text-[13px] text-muted font-medium mt-1 mb-4">Mulai mencatat transaksi untuk<br>melihat pola keuanganmu.</p>
+            <button @click="openAdd('keluar')" class="pressable px-5 py-3 bg-pine text-white text-[13.5px] font-bold rounded-2xl shadow-lift">Tambah Transaksi</button>
+          </div>
+        </template>
+        <div class="divide-y divide-slate-100">
+          <template x-for="(t, i) in transactions.slice(0, 5)" :key="t.id">
+            <div class="rise flex items-center gap-3 px-4 py-3.5 pressable active:bg-slate-50" :style="'animation-delay:' + Math.min(i * 45, 225) + 'ms'">
+              <div class="w-[46px] h-[46px] rounded-2xl flex items-center justify-center shrink-0"
+                   :class="{'bg-emerald-50 text-income': t.type === 'masuk', 'bg-rose-50 text-expense': t.type === 'keluar', 'bg-blue-50 text-invest': t.type === 'invest'}">
+                <template x-if="t.type === 'masuk'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17 13l-5 5-5-5M12 8v10"/></svg></template>
+                <template x-if="t.type === 'keluar'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 11l5-5 5 5M12 16V6"/></svg></template>
+                <template x-if="t.type === 'invest'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></template>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-bold text-[13.5px] leading-tight truncate" x-text="t.title"></p>
+                <p class="text-[11.5px] font-medium text-muted mt-1 truncate" x-text="t.category + ' • ' + t.date"></p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-extrabold text-[13.5px] tracking-fin tabular" :class="{'text-income': t.type === 'masuk', 'text-expense': t.type === 'keluar', 'text-invest': t.type === 'invest'}" x-text="(t.type === 'keluar' ? '−' : '+') + formatCompact(t.amount)"></p>
+                <p class="text-[10.5px] font-bold uppercase tracking-wide text-muted/70 mt-0.5" x-text="t.type === 'masuk' ? 'Masuk' : t.type === 'keluar' ? 'Keluar' : 'Invest'"></p>
+              </div>
+              <button @click="deleteTargetId = t.id; deleteOrigin = null; activeModal = 'confirm_delete'" aria-label="Hapus"
+                      class="pressable p-2 -mr-1 text-slate-300 hover:text-expense rounded-xl">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ══════════ FAB with action menu ══════════ -->
+  <div x-show="fabOpen" x-transition.opacity.duration.200ms class="fixed inset-0 z-30 bg-ink/30 backdrop-blur-[2px]" @click="fabOpen = false" style="display:none;"></div>
+  <div class="fixed bottom-6 right-5 z-30 flex flex-col items-end gap-3">
+    <div x-show="fabOpen" style="display:none;" class="flex flex-col items-end gap-3">
+      <button @click="openAdd('keluar')" x-transition:enter="transition duration-200 ease-out" x-transition:enter-start="opacity-0 translate-y-3 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              class="pressable flex items-center gap-2.5">
+        <span class="px-4 py-2.5 bg-ink text-white text-[13px] font-bold rounded-full shadow-lg">Tambah Pengeluaran</span>
+        <span class="w-[52px] h-[52px] rounded-full bg-expense text-white flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 11l5-5 5 5M12 16V6"/></svg>
+        </span>
+      </button>
+      <button @click="openAdd('masuk')" x-transition:enter="transition duration-200 ease-out delay-75" x-transition:enter-start="opacity-0 translate-y-3 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+              class="pressable flex items-center gap-2.5">
+        <span class="px-4 py-2.5 bg-ink text-white text-[13px] font-bold rounded-full shadow-lg">Tambah Pemasukan</span>
+        <span class="w-[52px] h-[52px] rounded-full bg-income text-white flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17 13l-5 5-5-5M12 8v10"/></svg>
+        </span>
+      </button>
+    </div>
+    <button @click="fabOpen = !fabOpen" aria-label="Tambah"
+            class="pressable w-[60px] h-[60px] rounded-full text-white flex items-center justify-center shadow-fab"
+            style="background: linear-gradient(140deg, #18A67E 0%, #0B7A63 60%, #075C4B 100%);">
+      <svg class="w-6 h-6 transition-transform duration-200" :class="fabOpen ? 'rotate-45' : 'rotate-0'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    </button>
+  </div>
+
+  <!-- ══════════ MODAL: ADD ══════════ -->
+  <div x-show="activeModal === 'add'" style="display:none;" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div x-show="activeModal === 'add'" x-transition.opacity class="fixed inset-0 bg-ink/40 backdrop-blur-sm" @click="activeModal = null"></div>
+    <div x-show="activeModal === 'add'"
+         x-transition:enter="transition transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+         x-transition:enter-start="translate-y-full sm:translate-y-10 sm:scale-95"
+         x-transition:enter-end="translate-y-0 sm:translate-y-0 sm:scale-100"
+         x-transition:leave="transition transform duration-200 ease-in"
+         x-transition:leave-start="translate-y-0 sm:scale-100"
+         x-transition:leave-end="translate-y-full sm:translate-y-10 sm:scale-95"
+         class="bg-white rounded-t-[28px] sm:rounded-[28px] w-full max-w-md shadow-2xl relative max-h-[92vh] overflow-y-auto no-scrollbar">
+      <div class="w-10 h-1 rounded-full bg-slate-200 mx-auto mt-3"></div>
+      <div class="px-5 pt-3 pb-4 flex justify-between items-start sticky top-0 bg-white/95 backdrop-blur-md z-10">
+        <div>
+          <h3 class="text-[18px] font-extrabold tracking-tight">Tambah Transaksi</h3>
+          <p class="text-[12.5px] text-muted font-medium mt-0.5">Catat dalam hitungan detik</p>
+        </div>
+        <button @click="activeModal = null" aria-label="Tutup" class="pressable w-9 h-9 text-muted bg-slate-100 rounded-full flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-5 pb-6 space-y-4">
+        <div class="grid grid-cols-3 gap-2 bg-slate-100 p-1.5 rounded-2xl">
+          <button @click="form.type = 'keluar'" class="pressable py-2.5 text-[13px] font-bold rounded-xl transition-all" :class="form.type === 'keluar' ? 'bg-white text-expense shadow-soft' : 'text-muted'">Pengeluaran</button>
+          <button @click="form.type = 'masuk'" class="pressable py-2.5 text-[13px] font-bold rounded-xl transition-all" :class="form.type === 'masuk' ? 'bg-white text-income shadow-soft' : 'text-muted'">Pemasukan</button>
+          <button @click="form.type = 'invest'" class="pressable py-2.5 text-[13px] font-bold rounded-xl transition-all" :class="form.type === 'invest' ? 'bg-white text-invest shadow-soft' : 'text-muted'">Investasi</button>
+        </div>
+        <div class="bg-mist border border-black/[0.04] rounded-2xl px-4 py-3 flex items-center gap-2 focus-within:ring-2 focus-within:ring-pine/60 transition-all">
+          <span class="font-extrabold text-muted text-[15px]">Rp</span>
+          <input type="number" x-model="form.amount" placeholder="0" inputmode="numeric"
+                 class="w-full bg-transparent text-[26px] font-extrabold tracking-fin tabular placeholder:text-slate-300 border-0 p-0 focus:ring-0">
+        </div>
+        <div>
+          <label class="block text-[10.5px] font-extrabold text-muted uppercase tracking-[0.1em] mb-1.5">Judul Transaksi</label>
+          <input type="text" x-model="form.title" placeholder="Misal: Makan Siang" class="w-full bg-mist border border-black/[0.04] rounded-2xl px-4 py-3.5 text-[14px] font-medium focus:ring-2 focus:ring-pine/60 transition-all placeholder:text-slate-400">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10.5px] font-extrabold text-muted uppercase tracking-[0.1em] mb-1.5">Kategori</label>
+            <input type="text" x-model="form.category" placeholder="Umum" class="w-full bg-mist border border-black/[0.04] rounded-2xl px-4 py-3.5 text-[14px] font-medium focus:ring-2 focus:ring-pine/60 transition-all placeholder:text-slate-400">
+          </div>
+          <div>
+            <label class="block text-[10.5px] font-extrabold text-muted uppercase tracking-[0.1em] mb-1.5">Tanggal</label>
+            <input type="date" x-model="form.date" class="w-full bg-mist border border-black/[0.04] rounded-2xl px-4 py-3.5 text-[14px] font-medium focus:ring-2 focus:ring-pine/60 transition-all">
+          </div>
+        </div>
+        <div>
+          <label class="block text-[10.5px] font-extrabold text-muted uppercase tracking-[0.1em] mb-1.5">Catatan <span class="normal-case font-medium text-slate-400">(opsional)</span></label>
+          <textarea x-model="form.note" rows="2" placeholder="Tambahkan detail…" class="w-full bg-mist border border-black/[0.04] rounded-2xl px-4 py-3.5 text-[14px] font-medium focus:ring-2 focus:ring-pine/60 transition-all placeholder:text-slate-400 resize-none"></textarea>
+        </div>
+        <button @click="addTransaction()" class="pressable w-full text-white font-extrabold py-4 rounded-2xl shadow-lift text-[15px]" style="background: linear-gradient(140deg,#18A67E,#0B7A63 65%,#075C4B);">Simpan Transaksi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL: ALL HISTORY ══════════ -->
+  <div x-show="activeModal === 'all_history'" style="display:none;" class="fixed inset-0 z-40 bg-mist flex flex-col pt-safe"
+       x-transition:enter="transition transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+       x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
+       x-transition:leave="transition transform duration-200 ease-in"
+       x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full">
+    <div class="bg-white px-5 pt-4 pb-3 border-b border-black/[0.05] shrink-0">
+      <div class="flex justify-between items-center max-w-md mx-auto w-full">
+        <div class="flex items-center">
+          <button @click="activeModal = null" aria-label="Kembali" class="pressable w-10 h-10 -ml-2 mr-2 text-ink bg-slate-100 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <div>
+            <h2 class="text-[17px] font-extrabold tracking-tight leading-none">Semua Transaksi</h2>
+            <p class="text-[12px] text-muted font-medium mt-1" x-text="filteredTransactions.length + ' transaksi'"></p>
+          </div>
+        </div>
+        <button @click="exportToCSV()" class="pressable px-3.5 py-2.5 bg-pine-soft text-pine-dark rounded-xl text-[13px] font-bold flex items-center border border-pine/15 min-h-[44px]">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Ekspor
+        </button>
+      </div>
+      <div class="max-w-md mx-auto w-full mt-3">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <input type="text" x-model="searchQuery" placeholder="Cari judul atau kategori..." class="w-full bg-mist border border-black/[0.04] rounded-2xl pl-10 pr-4 py-3 text-[14px] font-medium focus:ring-2 focus:ring-pine/60 transition-all placeholder:text-slate-400">
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-1 mt-3 no-scrollbar">
+          <button @click="selectedFilter = 'all'" class="pressable px-4 py-2 text-[13px] font-bold rounded-full whitespace-nowrap border min-h-[40px]" :class="selectedFilter === 'all' ? 'bg-ink text-white border-ink' : 'bg-white text-muted border-black/[0.06]'">Semua</button>
+          <button @click="selectedFilter = 'masuk'" class="pressable px-4 py-2 text-[13px] font-bold rounded-full whitespace-nowrap border min-h-[40px]" :class="selectedFilter === 'masuk' ? 'bg-income text-white border-income' : 'bg-white text-muted border-black/[0.06]'">Masuk</button>
+          <button @click="selectedFilter = 'keluar'" class="pressable px-4 py-2 text-[13px] font-bold rounded-full whitespace-nowrap border min-h-[40px]" :class="selectedFilter === 'keluar' ? 'bg-expense text-white border-expense' : 'bg-white text-muted border-black/[0.06]'">Keluar</button>
+          <button @click="selectedFilter = 'invest'" class="pressable px-4 py-2 text-[13px] font-bold rounded-full whitespace-nowrap border min-h-[40px]" :class="selectedFilter === 'invest' ? 'bg-invest text-white border-invest' : 'bg-white text-muted border-black/[0.06]'">Investasi</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 py-4 pb-20">
+      <div class="max-w-md mx-auto w-full">
+        <template x-if="filteredTransactions.length === 0">
+          <div class="text-center py-14 px-6">
+            <svg class="w-20 h-20 mx-auto mb-4" viewBox="0 0 80 80" fill="none">
+              <circle cx="40" cy="36" r="26" fill="#fff" stroke="#0B7A63" stroke-opacity=".12" stroke-width="2"/>
+              <circle cx="40" cy="36" r="15" fill="#E9F4EF"/>
+              <path d="M32 36h16M40 28v16" stroke="#0B7A63" stroke-opacity=".5" stroke-width="2.5" stroke-linecap="round"/>
+              <ellipse cx="40" cy="70" rx="14" ry="3" fill="#172B24" fill-opacity=".06"/>
+            </svg>
+            <p class="font-extrabold text-[15px]">Tidak ada hasil</p>
+            <p class="text-muted text-[13px] font-medium mt-1 mb-4">Coba kata kunci atau filter lain.</p>
+            <button @click="searchQuery=''; selectedFilter='all'" class="pressable px-5 py-3 bg-ink text-white text-[13px] font-bold rounded-2xl">Reset Pencarian</button>
+          </div>
+        </template>
+        <div class="bg-white rounded-[24px] border border-black/[0.04] shadow-soft divide-y divide-slate-100 overflow-hidden">
+          <template x-for="(t, index) in filteredTransactions" :key="t.id">
+            <div class="rise flex items-center gap-3 px-4 py-3.5 pressable active:bg-slate-50" :style="'animation-delay:' + Math.min(index * 20, 300) + 'ms'">
+              <div class="w-[46px] h-[46px] rounded-2xl flex items-center justify-center shrink-0"
+                   :class="{'bg-emerald-50 text-income': t.type === 'masuk', 'bg-rose-50 text-expense': t.type === 'keluar', 'bg-blue-50 text-invest': t.type === 'invest'}">
+                <template x-if="t.type === 'masuk'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17 13l-5 5-5-5M12 8v10"/></svg></template>
+                <template x-if="t.type === 'keluar'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 11l5-5 5 5M12 16V6"/></svg></template>
+                <template x-if="t.type === 'invest'"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></template>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-bold text-[13.5px] leading-tight truncate" x-text="t.title"></p>
+                <p class="text-[11.5px] font-medium text-muted mt-1 truncate" x-text="t.category + ' • ' + t.date"></p>
+                <p class="text-[11.5px] text-slate-400 mt-0.5 truncate italic" x-show="t.note" x-text="t.note"></p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-extrabold text-[13.5px] tracking-fin tabular" :class="{'text-income': t.type === 'masuk', 'text-expense': t.type === 'keluar', 'text-invest': t.type === 'invest'}" x-text="(t.type === 'keluar' ? '−' : '+') + formatCompact(t.amount)"></p>
+                <button @click="deleteTargetId = t.id; deleteOrigin = 'all_history'; activeModal = 'confirm_delete'" aria-label="Hapus" class="pressable mt-1.5 inline-flex p-1.5 text-slate-300 hover:text-expense rounded-lg">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL: DELETE ══════════ -->
+  <div x-show="activeModal === 'confirm_delete'" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-5">
+    <div x-show="activeModal === 'confirm_delete'" x-transition.opacity class="fixed inset-0 bg-ink/50 backdrop-blur-sm" @click="activeModal = deleteOrigin || null; deleteTargetId = null"></div>
+    <div x-show="activeModal === 'confirm_delete'"
+         x-transition:enter="transition transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+         x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100"
+         x-transition:leave="transition transform duration-150 ease-in"
+         x-transition:leave-start="scale-100 opacity-100" x-transition:leave-end="scale-95 opacity-0"
+         class="bg-white rounded-[28px] w-full max-w-sm shadow-2xl relative p-6 text-center z-10">
+      <div class="w-16 h-16 bg-rose-50 text-expense rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <h3 class="text-[19px] font-extrabold tracking-tight mb-1.5">Hapus Transaksi?</h3>
+      <p class="text-[13.5px] text-muted font-medium mb-6 leading-relaxed">Data yang dihapus tidak bisa dikembalikan.</p>
+      <div class="flex gap-3">
+        <button @click="activeModal = deleteOrigin || null; deleteTargetId = null" class="pressable flex-1 py-3.5 bg-slate-100 font-bold rounded-2xl text-[14px] min-h-[52px]">Batal</button>
+        <button @click="deleteTransaction(deleteTargetId)" class="pressable flex-1 py-3.5 bg-expense text-white font-bold rounded-2xl shadow-lg shadow-expense/30 text-[14px] min-h-[52px]">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL: REPORT (Summary → Trend → Chart → Insight → Breakdown) ══════════ -->
+  <div x-show="activeModal === 'report'" style="display:none;" class="fixed inset-0 z-40 bg-mist flex flex-col pt-safe"
+       x-transition:enter="transition transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+       x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
+       x-transition:leave="transition transform duration-200 ease-in"
+       x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full">
+    <div class="bg-white px-5 pt-4 pb-3 border-b border-black/[0.05] shrink-0">
+      <div class="max-w-md mx-auto w-full">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center">
+            <button @click="activeModal = null" aria-label="Kembali" class="pressable w-10 h-10 -ml-2 mr-2 text-ink bg-slate-100 rounded-full flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div>
+              <h2 class="text-[17px] font-extrabold tracking-tight leading-none">Laporan Komparatif</h2>
+              <p class="text-[12px] text-muted font-medium mt-1">Tren & perbandingan periode</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button @click="exportToCSV()" class="pressable flex-1 py-3 bg-pine-soft text-pine-dark rounded-2xl text-[13px] font-bold border border-pine/15 min-h-[48px]">Export CSV</button>
+          <button @click="exportToPDF()" :disabled="exportingPdf" class="pressable flex-1 py-3 text-white rounded-2xl text-[13px] font-bold shadow-lift min-h-[48px] disabled:opacity-70" style="background: linear-gradient(140deg,#18A67E,#0B7A63 65%,#075C4B);">
+            <span x-show="!exportingPdf">Export PDF</span>
+            <span x-show="exportingPdf" class="inline-flex items-center justify-center gap-2">
+              <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+              Membuat PDF…
+            </span>
+          </button>
+        </div>
+        <div class="flex gap-2 bg-slate-100 p-1 rounded-2xl mt-3">
+          <button @click="reportRange = 3; updateReportChart()" class="pressable flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all min-h-[44px]" :class="reportRange === 3 ? 'bg-white shadow-soft' : 'text-muted'">3 Bulan</button>
+          <button @click="reportRange = 6; updateReportChart()" class="pressable flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all min-h-[44px]" :class="reportRange === 6 ? 'bg-white shadow-soft' : 'text-muted'">6 Bulan</button>
+          <button @click="reportRange = 12; updateReportChart()" class="pressable flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all min-h-[44px]" :class="reportRange === 12 ? 'bg-white shadow-soft' : 'text-muted'">1 Tahun</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-5 py-5 pb-20">
+      <div class="max-w-md mx-auto w-full space-y-3.5">
+        <template x-if="transactions.length < 2">
+          <div class="text-center py-14 px-6 bg-white rounded-[28px] border border-black/[0.04] shadow-soft">
+            <svg class="w-24 h-24 mx-auto mb-4" viewBox="0 0 96 96" fill="none">
+              <rect x="14" y="30" width="68" height="44" rx="14" fill="#E9F4EF"/>
+              <rect x="24" y="52" width="10" height="12" rx="3" fill="#0B7A63" fill-opacity=".3"/>
+              <rect x="38" y="44" width="10" height="20" rx="3" fill="#0B7A63" fill-opacity=".55"/>
+              <rect x="52" y="36" width="10" height="28" rx="3" fill="#0B7A63"/>
+              <circle cx="68" cy="24" r="10" fill="#fff" stroke="#0B7A63" stroke-opacity=".2" stroke-width="2"/>
+              <path d="M68 19v10M63 24h10" stroke="#0B7A63" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p class="font-extrabold text-[15px]">Belum cukup data buat lihat tren</p>
+            <p class="text-muted text-[13px] font-medium mt-1 mb-4">Catat transaksi minimal 2 bulan ya.</p>
+            <button @click="activeModal = null; $nextTick(() => openAdd('keluar'))" class="pressable px-5 py-3 text-white text-[13.5px] font-bold rounded-2xl shadow-lift" style="background: linear-gradient(140deg,#18A67E,#0B7A63 65%,#075C4B);">Tambah Transaksi</button>
+          </div>
+        </template>
+
+        <template x-if="transactions.length >= 2">
+          <div class="space-y-3.5">
+            <!-- 1. SUMMARY -->
+            <div class="bg-white rounded-[24px] shadow-soft border border-black/[0.04] p-4 grid grid-cols-3 divide-x divide-slate-100">
+              <div class="px-3 text-center">
+                <p class="text-[10px] font-extrabold uppercase tracking-[0.1em] text-muted">Total Keluar</p>
+                <p class="text-[14px] font-extrabold tracking-fin tabular mt-1 text-expense" x-text="formatCompact(reportSummary.totalExpense)"></p>
+              </div>
+              <div class="px-3 text-center">
+                <p class="text-[10px] font-extrabold uppercase tracking-[0.1em] text-muted">Rata-rata/Bln</p>
+                <p class="text-[14px] font-extrabold tracking-fin tabular mt-1" x-text="formatCompact(reportSummary.avgExpense)"></p>
+              </div>
+              <div class="px-3 text-center">
+                <p class="text-[10px] font-extrabold uppercase tracking-[0.1em] text-muted">Tren</p>
+                <p class="text-[14px] font-extrabold tracking-fin tabular mt-1" :class="reportSummary.trendUp ? 'text-expense' : 'text-income'" x-text="reportSummary.trendLabel"></p>
+              </div>
+            </div>
+            <!-- 2+3. TREND CHART -->
+            <div class="bg-white rounded-[24px] shadow-soft border border-black/[0.04] p-4">
+              <p class="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted px-1 mb-2">Tren Bulanan</p>
+              <div class="relative h-64 w-full flex justify-center"><canvas id="reportChart"></canvas></div>
+            </div>
+            <!-- 4. INSIGHT -->
+            <div class="bg-pine-soft border border-pine/10 rounded-[24px] px-4 py-3.5 flex gap-3 items-start">
+              <div class="w-9 h-9 rounded-full bg-pine text-white flex items-center justify-center shrink-0">
+                <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-pine-dark">Kesimpulan</p>
+                <p class="text-[13.5px] font-medium text-ink/90 leading-relaxed mt-0.5" x-text="reportInsight"></p>
+              </div>
+            </div>
+            <!-- 5. BREAKDOWN -->
+            <div class="bg-white rounded-[24px] shadow-soft border border-black/[0.04] overflow-hidden">
+              <p class="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-muted px-5 pt-4 pb-1">Berdasarkan Kategori</p>
+              <div class="divide-y divide-slate-100">
+                <template x-for="c in categoryBreakdown" :key="c.name">
+                  <div class="px-5 py-3.5">
+                    <div class="flex justify-between items-center mb-2">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="'background:' + c.color"></span>
+                        <span class="font-bold text-[13px] truncate" x-text="c.name"></span>
+                        <span class="text-[11px] font-semibold text-muted" x-text="'• ' + c.count + 'x'"></span>
+                      </div>
+                      <span class="font-extrabold text-[13px] tabular tracking-fin shrink-0" x-text="formatCompact(c.total)"></span>
+                    </div>
+                    <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div class="h-full rounded-full" :style="'width:' + c.pct + '%;background:' + c.color"></div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MODAL: SETTINGS ══════════ -->
+  <div x-show="activeModal === 'settings'" style="display:none;" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div x-show="activeModal === 'settings'" x-transition.opacity class="fixed inset-0 bg-ink/40 backdrop-blur-sm" @click="activeModal = null"></div>
+    <div x-show="activeModal === 'settings'"
+         x-transition:enter="transition transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+         x-transition:enter-start="translate-y-full sm:translate-y-10 sm:scale-95"
+         x-transition:enter-end="translate-y-0 sm:scale-100"
+         x-transition:leave="transition transform duration-200 ease-in"
+         x-transition:leave-start="translate-y-0 sm:scale-100"
+         x-transition:leave-end="translate-y-full sm:translate-y-10 sm:scale-95"
+         class="bg-white rounded-t-[28px] sm:rounded-[28px] w-full max-w-md shadow-2xl relative z-10">
+      <div class="w-10 h-1 rounded-full bg-slate-200 mx-auto mt-3"></div>
+      <div class="px-5 pt-3 pb-4 flex justify-between items-center">
+        <h3 class="text-[18px] font-extrabold tracking-tight">Pengaturan</h3>
+        <button @click="activeModal = null" aria-label="Tutup" class="pressable w-9 h-9 text-muted bg-slate-100 rounded-full flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-5 pb-6">
+        <label class="block text-[10.5px] font-extrabold text-muted uppercase tracking-[0.1em] mb-1.5">Target Budget Bulanan</label>
+        <div class="bg-mist border border-black/[0.04] rounded-2xl px-4 py-3 flex items-center gap-2 focus-within:ring-2 focus-within:ring-pine/60 transition-all mb-3">
+          <span class="font-extrabold text-muted text-[15px]">Rp</span>
+          <input type="number" x-model="targetBudget" @change="saveData()" placeholder="Contoh: 5000000" inputmode="numeric" class="w-full bg-transparent text-[18px] font-extrabold tabular placeholder:text-slate-300 border-0 p-0 focus:ring-0">
+        </div>
+        <div class="bg-pine-soft border border-pine/10 rounded-2xl px-4 py-3 flex gap-2.5 mb-4">
+          <svg class="w-4 h-4 text-pine-dark shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p class="text-[12.5px] font-medium text-ink/80 leading-snug">Budget membantumu sadar batas aman belanja setiap bulan.</p>
+        </div>
+        <button @click="saveData(); activeModal = null" class="pressable w-full text-white font-extrabold py-4 rounded-2xl shadow-lift text-[15px]" style="background: linear-gradient(140deg,#18A67E,#0B7A63 65%,#075C4B);">Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TOAST ══════════ -->
+  <div x-show="toastVisible" style="display:none;"
+       x-transition:enter="toast-enter" x-transition:leave="toast-leave"
+       class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] pointer-events-none w-max max-w-[92vw]">
+    <div class="px-5 py-3 rounded-2xl shadow-lg border text-[13.5px] font-bold flex items-center gap-2.5"
+         :class="{'bg-pine-dark text-white border-pine shadow-lift': toastType === 'success', 'bg-expense text-white border-expense shadow-lg shadow-expense/30': toastType === 'error'}">
+      <template x-if="toastType === 'success'">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+      </template>
+      <template x-if="toastType === 'error'">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </template>
+      <span class="truncate" x-text="toastMessage"></span>
+    </div>
+  </div>
+
+</div><!-- /max-w-md -->
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('quillApp', () => ({
+        transactions: [],
+        targetBudget: 5000000,
+
+        activeModal: null,
+        fabOpen: false,
+        deleteTargetId: null,
+        deleteOrigin: null,
+        searchQuery: '',
+        selectedFilter: 'all',
+        toastMessage: '',
+        toastType: 'success',
+        toastVisible: false,
+        _toastTimer: null,
+
+        form: { title: '', amount: '', type: 'keluar', category: 'Umum', date: '', note: '' },
+        chartInstance: null,
+        reportChartInstance: null,
+        reportRange: 6,
+        exportingPdf: false,
+        animatedTotalKekayaan: 0,
+        animatedTotalPemasukan: 0,
+        animatedTotalPengeluaran: 0,
+        animatedTotalInvestasi: 0,
+
+        init() {
+          const saved = localStorage.getItem('quill_transactions');
+          this.transactions = saved ? JSON.parse(saved) : [];
+          const savedBudget = localStorage.getItem('quill_target_budget');
+          if (savedBudget) this.targetBudget = Number(savedBudget);
+
+          this.animatedTotalKekayaan = this.totalKekayaan;
+          this.animatedTotalPemasukan = this.totalPemasukan;
+          this.animatedTotalPengeluaran = this.totalPengeluaran;
+          this.animatedTotalInvestasi = this.totalInvestasi;
+
+          this.$watch('transactions', () => {
+              this.animateNumber('animatedTotalKekayaan', this.totalKekayaan);
+              this.animateNumber('animatedTotalPemasukan', this.totalPemasukan);
+              this.animateNumber('animatedTotalPengeluaran', this.totalPengeluaran);
+              this.animateNumber('animatedTotalInvestasi', this.totalInvestasi);
+              this.updateChart();
+              if (this.reportChartInstance) this.updateReportChart();
+          });
+
+          this.$nextTick(() => { this.initChart(); });
+        },
+
+        saveData() {
+          localStorage.setItem('quill_transactions', JSON.stringify(this.transactions));
+          localStorage.setItem('quill_target_budget', this.targetBudget.toString());
+          this.updateChart();
+        },
+
+        get totalPemasukan() { return this.transactions.filter(t => t.type === 'masuk').reduce((s, t) => s + Number(t.amount), 0); },
+        get totalPengeluaran() { return this.transactions.filter(t => t.type === 'keluar').reduce((s, t) => s + Number(t.amount), 0); },
+        get totalInvestasi() { return this.transactions.filter(t => t.type === 'invest').reduce((s, t) => s + Number(t.amount), 0); },
+        get totalKekayaan() { return this.totalPemasukan - this.totalPengeluaran - this.totalInvestasi; },
+        get remainingBudget() { return Math.max(this.targetBudget - this.totalPengeluaran, 0); },
+
+        get budgetPercentage() {
+          if (this.targetBudget <= 0) return 0;
+          return Math.min(Math.round((this.totalPengeluaran / this.targetBudget) * 100), 100);
+        },
+
+
+        monthExpense(year, month) {
+          const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+          return this.transactions
+            .filter(t => t.type === 'keluar' && typeof t.date === 'string' && t.date.slice(0, 7) === key)
+            .reduce((s, t) => s + Number(t.amount), 0);
+        },
+        get monthlyTrendUp() {
+          const n = new Date();
+          const cur = this.monthExpense(n.getFullYear(), n.getMonth());
+          const p = new Date(n.getFullYear(), n.getMonth() - 1, 1);
+          const prev = this.monthExpense(p.getFullYear(), p.getMonth());
+          if (!prev) return false;
+          return cur > prev;
+        },
+        get monthlyChangeLabel() {
+          const n = new Date();
+          const cur = this.monthExpense(n.getFullYear(), n.getMonth());
+          const p = new Date(n.getFullYear(), n.getMonth() - 1, 1);
+          const prev = this.monthExpense(p.getFullYear(), p.getMonth());
+          if (!prev) return cur > 0 ? 'Awal yang baik bulan ini' : 'Belum ada pengeluaran';
+          const pct = Math.round(((cur - prev) / prev) * 100);
+          if (pct === 0) return 'Stabil dibanding bulan lalu';
+          return (pct > 0 ? '+' : '') + pct + '% dibanding bulan lalu';
+        },
+
+        get biggestCategory() {
+          const map = {};
+          this.transactions.filter(t => t.type === 'keluar').forEach(t => {
+            const k = (t.category || 'Umum').trim() || 'Umum';
+            map[k] = (map[k] || 0) + Number(t.amount);
+          });
+          const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+          return entries.length ? { name: entries[0][0], total: entries[0][1] } : { name: '', total: 0 };
+        },
+        get smartInsight() {
+          if (this.transactions.length === 0) return 'Mulai mencatat transaksi untuk melihat pola keuanganmu.';
+          if (this.budgetPercentage > 85) return `Budget sudah ${this.budgetPercentage}% terpakai. Sisa ${this.formatRupiah(this.remainingBudget)} bulan ini — rem sedikit ya.`;
+          if (this.budgetPercentage >= 60) return `Kamu sudah memakai ${this.budgetPercentage}% budget. Sisa ${this.formatRupiah(this.remainingBudget)} untuk bulan ini.`;
+          const b = this.biggestCategory;
+          if (b.total > 0) {
+            if (!this.monthlyTrendUp && this.monthExpense(new Date().getFullYear(), new Date().getMonth()) > 0)
+              return `Pengeluaranmu turun dibanding bulan lalu. Kategori terbesar: ${b.name}. Pertahankan!`;
+            return `Kategori terbesar bulan ini adalah ${b.name} (${this.formatRupiah(b.total)}).`;
+          }
+          return `Kamu masih memiliki ${this.formatRupiah(this.remainingBudget)} dari budget bulan ini.`;
+        },
+        get chartInsight() {
+          const total = this.totalPemasukan + this.totalPengeluaran + this.totalInvestasi;
+          if (!total) return '';
+          const pct = Math.round((this.totalPengeluaran / total) * 100);
+          return `Pengeluaran mencakup ${pct}% dari total aktivitas keuanganmu.`;
+        },
+
+        get reportSummary() {
+          const data = this.aggregateByMonth(this.reportRange);
+          const totalExpense = data.reduce((s, d) => s + d.expense, 0);
+          const avgExpense = data.length ? Math.round(totalExpense / data.length) : 0;
+          let trendLabel = '—', trendUp = false;
+          if (data.length >= 2) {
+            const last = data[data.length - 1].expense, prev = data[data.length - 2].expense;
+            if (!prev && !last) trendLabel = 'Stabil';
+            else if (!prev) { trendLabel = 'Baru'; trendUp = true; }
+            else {
+              const pct = Math.round(((last - prev) / prev) * 100);
+              trendUp = pct > 0;
+              trendLabel = (pct > 0 ? '+' : '') + pct + '%';
+            }
+          }
+          return { totalExpense, avgExpense, trendLabel, trendUp };
+        },
+        get reportInsight() {
+          const s = this.reportSummary;
+          if (s.trendLabel === '—' || s.trendLabel === 'Stabil') return 'Aktivitas keuanganmu relatif stabil di periode ini.';
+          if (s.trendLabel === 'Baru') return 'Periode ini mulai ada pengeluaran tercatat. Pantau terus trennya.';
+          return s.trendUp
+            ? `Pengeluaran meningkat ${s.trendLabel.replace('+', '')} dibanding bulan sebelumnya. Cek kategori terbesar di bawah.`
+            : `Pengeluaran turun ${s.trendLabel.replace('-', '')} dibanding bulan sebelumnya. Kerja bagus!`;
+        },
+        get categoryBreakdown() {
+          const palette = ['#0B7A63', '#E65361', '#4A7FC1', '#E8A13D', '#8B5CF6', '#14B8A6'];
+          const map = {};
+          this.transactions.forEach(t => {
+            const k = ((t.category || 'Umum').trim() || 'Umum');
+            if (!map[k]) map[k] = { name: k, total: 0, count: 0 };
+            map[k].total += Number(t.amount);
+            map[k].count += 1;
+          });
+          const arr = Object.values(map).sort((a, b) => b.total - a.total).slice(0, 6);
+          const max = arr.length ? arr[0].total : 1;
+          return arr.map((c, i) => ({ ...c, color: palette[i % palette.length], pct: Math.max(Math.round((c.total / max) * 100), 8) }));
+        },
+
+        get filteredTransactions() {
+          return this.transactions.filter(t => {
+            const q = (this.searchQuery || '').toLowerCase();
+            const matchSearch = (t.title || '').toLowerCase().includes(q) || (t.category || '').toLowerCase().includes(q);
+            const matchFilter = this.selectedFilter === 'all' || t.type === this.selectedFilter;
+            return matchSearch && matchFilter;
+          });
+        },
+
+        openAdd(type) {
+          this.fabOpen = false;
+          if (type) this.form.type = type;
+          this.activeModal = 'add';
+        },
+
+        addTransaction() {
+          if (!this.form.title || !this.form.amount || Number(this.form.amount) <= 0) {
+            if (!this.form.title) this.showToast('Judul transaksi wajib diisi.', 'error');
+            else if (!this.form.amount || Number(this.form.amount) <= 0) this.showToast('Jumlah harus lebih dari 0.', 'error');
+            return;
+          }
+          const newTx = {
+            id: Date.now().toString(),
+            title: this.form.title,
+            amount: Number(this.form.amount),
+            type: this.form.type,
+            category: this.form.category || 'Umum',
+            date: this.form.date || new Date().toISOString().split('T')[0],
+            note: this.form.note || ''
+          };
+          this.transactions.unshift(newTx);
+          this.saveData();
+          this.resetForm();
+          this.activeModal = null;
+          this.showToast('Transaksi tersimpan.', 'success');
+        },
+
+        deleteTransaction(id) {
+          this.transactions = this.transactions.filter(t => t.id !== id);
+          this.saveData();
+          const returnTo = this.deleteOrigin;
+          this.deleteTargetId = null;
+          this.deleteOrigin = null;
+          this.activeModal = returnTo || null;
+          this.showToast('Transaksi berhasil dihapus.', 'success');
+        },
+
+        exportToCSV() {
+          if (this.transactions.length === 0) {
+            this.showToast('Belum ada data transaksi untuk diekspor.', 'error');
+            return;
+          }
+          try {
+            const escapeCSV = (val) => {
+              const str = String(val == null ? '' : val);
+              if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+              }
+              return '"' + str + '"';
+            };
+            const header = 'ID,Judul,Tipe,Kategori,Jumlah,Tanggal,Catatan';
+            const rows = this.transactions.map(t => {
+              const tipeLabel = t.type === 'masuk' ? 'Pemasukan' : t.type === 'keluar' ? 'Pengeluaran' : 'Investasi';
+              return [t.id, t.title, tipeLabel, t.category, t.amount, t.date, t.note].map(escapeCSV).join(',');
+            });
+            const csvString = '\uFEFF' + header + '\n' + rows.join('\n');
+            const filename = `Quillastika_Export_${new Date().toISOString().slice(0,10)}.csv`;
+            const b64 = btoa(unescape(encodeURIComponent(csvString)));
+            this.saveFileLocally(filename, b64, true);
+          } catch (e) {
+            console.error('CSV Export error:', e);
+            this.showToast('Gagal mengekspor CSV. Silakan coba lagi.', 'error');
+          }
+        },
+
+        resetForm() {
+           this.form = { title: '', amount: '', type: 'keluar', category: 'Umum', date: '', note: '' };
+        },
+
+        showToast(message, type = 'success', duration = 2500) {
+          if (this._toastTimer) clearTimeout(this._toastTimer);
+          this.toastMessage = message;
+          this.toastType = type;
+          this.toastVisible = true;
+          this._toastTimer = setTimeout(() => { this.toastVisible = false; }, duration);
+        },
+
+        formatRupiah(val) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val || 0);
+        },
+        formatCompact(val) {
+            const n = Number(val || 0);
+            if (Math.abs(n) >= 1000000) {
+              const s = (n / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 });
+              return 'Rp' + s + ' jt';
+            }
+            return this.formatRupiah(n);
+        },
+
+        initChart() {
+            const ctx = document.getElementById('expenseChart');
+            if (!ctx) return;
+            this.chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: this.getChartData(),
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 800, easing: 'easeOutQuart' },
+                    cutout: '72%',
+                    plugins: {
+                        legend: {
+                          position: 'bottom',
+                          labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20,
+                            font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600' }
+                          }
+                        }
+                    },
+                    layout: { padding: 10 }
+                }
+            });
+        },
+
+        updateChart() {
+            if (this.chartInstance) {
+                this.chartInstance.data = this.getChartData();
+                this.chartInstance.update();
+            }
+        },
+
+        getChartData() {
+            const keluar = this.totalPengeluaran;
+            const masuk = this.totalPemasukan;
+            const invest = this.totalInvestasi;
+            if (keluar === 0 && masuk === 0 && invest === 0) {
+                return { labels: ['Belum ada data'], datasets: [{ data: [1], backgroundColor: ['#eef1ef'], borderWidth: 0 }] };
+            }
+            return {
+                labels: ['Pengeluaran', 'Pemasukan', 'Investasi'],
+                datasets: [{ data: [keluar, masuk, invest], backgroundColor: ['#E65361', '#159570', '#4A7FC1'], borderWidth: 3, borderColor: '#ffffff', hoverOffset: 6 }]
+            };
+        },
+
+        getProgressBarColor() {
+            const p = this.budgetPercentage;
+            if (p < 60) return 'bg-gradient-to-r from-[#18A67E] to-[#0B7A63]';
+            if (p <= 85) return 'bg-gradient-to-r from-amber-400 to-amber-500';
+            return 'bg-gradient-to-r from-rose-400 to-[#E65361]';
+        },
+
+        animateNumber(prop, to) {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                this[prop] = to;
+                return;
+            }
+            let from = this[prop] || 0;
+            let duration = 600;
+            let start = null;
+            const step = (timestamp) => {
+                if (!start) start = timestamp;
+                let progress = timestamp - start;
+                let percentage = Math.min(progress / duration, 1);
+                let ease = percentage === 1 ? 1 : 1 - Math.pow(2, -10 * percentage);
+                this[prop] = from + (to - from) * ease;
+                if (percentage < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        },
+
+        aggregateByMonth(rangeInMonths) {
+            const result = [];
+            const now = new Date();
+            for (let i = rangeInMonths - 1; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const label = d.toLocaleString('id-ID', { month: 'short' }) + (i===rangeInMonths-1 || d.getMonth()===0 ? ` '${String(d.getFullYear()).slice(2)}` : '');
+                result.push({ month: monthKey, label, income: 0, expense: 0, investment: 0 });
+            }
+            this.transactions.forEach(t => {
+                if (!t.date || typeof t.date !== 'string') return;
+                const [y, m] = t.date.split('-');
+                const monthKey = `${y}-${m}`;
+                const bucket = result.find(b => b.month === monthKey);
+                if (bucket) {
+                    if (t.type === 'masuk') bucket.income += Number(t.amount);
+                    else if (t.type === 'keluar') bucket.expense += Number(t.amount);
+                    else if (t.type === 'invest') bucket.investment += Number(t.amount);
+                }
+            });
+            return result;
+        },
+
+        updateReportChart() {
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!this.reportChartInstance) {
+                const ctx = document.getElementById('reportChart');
+                if (!ctx) return;
+                this.reportChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: this.getReportChartData(),
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: reduceMotion ? false : { duration: 800, easing: 'easeOutQuart' },
+                        scales: {
+                          x: { stacked: false, grid: { display: false }, ticks: { font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 } } },
+                          y: { stacked: false, beginAtZero: true, grid: { color: '#eef1ef' }, ticks: { font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 }, callback: (v) => v >= 1000000 ? (v/1000000) + 'jt' : v >= 1000 ? (v/1000) + 'rb' : v } }
+                        },
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 16, font: { family: "'Plus Jakarta Sans', sans-serif", weight: '600', size: 11 } } } }
+                    }
+                });
+            } else {
+                this.reportChartInstance.options.animation = reduceMotion ? false : { duration: 800, easing: 'easeOutQuart' };
+                this.reportChartInstance.data = this.getReportChartData();
+                this.reportChartInstance.update();
+            }
+        },
+
+        getReportChartData() {
+            const data = this.aggregateByMonth(this.reportRange);
+            return {
+                labels: data.map(d => d.label),
+                datasets: [
+                    { label: 'Pengeluaran', data: data.map(d => d.expense), backgroundColor: '#E65361', borderRadius: 5, maxBarThickness: 22 },
+                    { label: 'Pemasukan', data: data.map(d => d.income), backgroundColor: '#159570', borderRadius: 5, maxBarThickness: 22 },
+                    { label: 'Investasi', data: data.map(d => d.investment), backgroundColor: '#4A7FC1', borderRadius: 5, maxBarThickness: 22 }
+                ]
+            };
+        },
+
+        async saveFileLocally(filename, data, isBase64) {
+            const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+            if (isNative && window.Capacitor.Plugins.Filesystem) {
+                try {
+                    await window.Capacitor.Plugins.Filesystem.writeFile({
+                        path: `Download/${filename}`,
+                        data: data,
+                        directory: 'EXTERNAL_STORAGE',
+                        recursive: true
+                    });
+                    this.showToast(`Tersimpan di Download/${filename}`, 'success');
+                    return;
+                } catch (e) {
+                    console.warn('Fallback to Documents/ due to Scoped Storage:', e);
+                    try {
+                        await window.Capacitor.Plugins.Filesystem.writeFile({
+                            path: filename,
+                            data: data,
+                            directory: 'DOCUMENTS',
+                            recursive: true
+                        });
+                        this.showToast(`Tersimpan di Documents/${filename}`, 'success');
+                        return;
+                    } catch(e2) {
+                        console.error('File write error:', e2);
+                    }
+                }
+            }
+            let blob;
+            if (isBase64) {
+                const byteCharacters = atob(data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+                blob = new Blob([new Uint8Array(byteNumbers)], {type: filename.endsWith('.pdf') ? 'application/pdf' : 'text/csv'});
+            } else {
+                blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
+            }
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = filename; link.style.display = 'none';
+            document.body.appendChild(link);
+            try { link.click(); } catch(e) {}
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            this.showToast(`Berhasil mengekspor ${filename}`, 'success');
+        },
+
+        reportPeriodLabel() {
+            const months = this.aggregateByMonth(this.reportRange);
+            if (!months.length) return 'Semua periode';
+            const fmtKey = (key) => {
+                const parts = String(key).split('-');
+                const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+                return d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+            };
+            const first = fmtKey(months[0].month), last = fmtKey(months[months.length - 1].month);
+            return first === last ? first : `${first} – ${last}`;
+        },
+
+        async shareOrSavePdf(filename, base64Data) {
+            const Cap = window.Capacitor;
+            const isNative = Cap && Cap.isNativePlatform && Cap.isNativePlatform();
+            const FS = Cap && Cap.Plugins && Cap.Plugins.Filesystem;
+            const Share = Cap && Cap.Plugins && Cap.Plugins.Share;
+            if (isNative && FS && Share) {
+                try {
+                    const path = `quill/${filename}`;
+                    await FS.writeFile({ path: path, data: base64Data, directory: 'CACHE', recursive: true });
+                    const uri = await FS.getUri({ path: path, directory: 'CACHE' });
+                    await Share.share({
+                        title: 'Laporan Keuangan Quillastika',
+                        text: `Laporan keuangan Quillastika (${this.reportPeriodLabel()})`,
+                        url: uri.uri,
+                        dialogTitle: 'Bagikan laporan'
+                    });
+                    this.showToast('PDF siap dibagikan.', 'success');
+                    return;
+                } catch (e) {
+                    console.warn('Native share unavailable, falling back to file save:', e);
+                }
+            }
+            this.saveFileLocally(filename, base64Data, true);
+        },
+
+        async exportToPDF() {
+            if (this.exportingPdf) return;
+            if (this.transactions.length === 0) {
+                this.showToast('Belum ada data transaksi untuk diekspor.', 'error');
+                return;
+            }
+            if (!window.QuillPDF || typeof window.QuillPDF.exportFinancialReport !== 'function') {
+                this.showToast('Modul PDF belum siap. Muat ulang aplikasi lalu coba lagi.', 'error');
+                return;
+            }
+            this.exportingPdf = true;
+            try {
+                let chartImage = null;
+                try {
+                    if (this.reportChartInstance) chartImage = this.reportChartInstance.toBase64Image();
+                } catch (chartErr) {
+                    console.warn('Chart image skipped:', chartErr);
+                }
+                const result = window.QuillPDF.exportFinancialReport({
+                    transactions: this.transactions,
+                    periodLabel: this.reportPeriodLabel(),
+                    chartImage: chartImage,
+                    formatRupiah: (v) => this.formatRupiah(v)
+                });
+                await this.shareOrSavePdf(result.filename, result.base64);
+            } catch (e) {
+                console.error('PDF export error:', e);
+                if (e && e.code === 'NO_DATA') {
+                    this.showToast('Belum ada data valid untuk diekspor.', 'error');
+                } else if (e && e.code === 'LIB_MISSING') {
+                    this.showToast('Library PDF belum siap. Muat ulang aplikasi lalu coba lagi.', 'error');
+                } else {
+                    this.showToast('Gagal membuat PDF. Silakan coba lagi.', 'error');
+                }
+            } finally {
+                this.exportingPdf = false;
+            }
+        }
+      }));
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "appId": "com.quill.finance",
+  "appName": "Quillastika",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#059669",
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "LIGHT",
+      "backgroundColor": "#00000000"
+    }
+  }
+}

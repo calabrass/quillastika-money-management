@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Quillastika</string>
+    <string name="title_activity_main">Quillastika</string>
+    <string name="package_name">com.quill.finance</string>
+    <string name="custom_url_scheme">com.quill.finance</string>
+</resources>

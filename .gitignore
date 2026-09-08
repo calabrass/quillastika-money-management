@@ -1,0 +1,59 @@
+# ── Dependencies (install ulang via: npm install) ──
+node_modules/
+.npm/
+
+# ── Logs ──
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Build output ──
+dist/
+build/
+
+# ── IDE / Editor ──
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Env & secrets (JANGAN commit) ──
+.env
+.env.local
+*.jks
+*.keystore
+
+# ── Python scratch ──
+__pycache__/
+*.py[cod]
+
+# ── Capacitor: web assets hasil `npx cap sync`, diregenerate otomatis ──
+# (android/app/src/main/assets/public sudah di-ignore oleh android/.gitignore)
+# ── Android / Gradle ──
+.gradle/
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+
+# ── Android generated files ──
+android/local.properties
+
+# ── APK / AAB ──
+*.apk
+*.aab
+
+# ── Signing keys ──
+*.jks
+*.keystore
+
+# Local tooling/cache
+.freebuff/
