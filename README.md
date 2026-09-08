@@ -61,6 +61,14 @@ Keterangan:
 * `package.json` — dependency project
 * `patch*.py` — script lama yang sudah tidak digunakan
 
+## Download
+
+[![Download APK](https://img.shields.io/badge/Download%20APK-Quillastika-green?style=for-the-badge\&logo=android)](https://github.com/calabrass/quillastika-money-management/releases/latest/download/quillastika.apk)
+
+Unduh versi terbaru **Quillastika** untuk Android.
+
+Untuk melihat riwayat rilis dan versi sebelumnya, kunjungi halaman [Releases](https://github.com/calabrass/quillastika-money-management/releases).
+
 ## Menjalankan Project
 
 ### Browser
